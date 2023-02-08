@@ -13,6 +13,8 @@ func InitRouter() *gin.Engine {
 	issue := app.Group("/api/issues")
 	{
 		issue.GET("/", issueHandler.GetAllIssueList)
+		issue.GET("/:id", issueHandler.FindIssueById)
+		issue.POST("/", issueHandler.CreateIssue)
 	}
 
 	return app
