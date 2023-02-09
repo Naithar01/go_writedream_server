@@ -81,8 +81,13 @@ func FindIssueById(c *gin.Context) {
 	// issue 테이블에서 id로 특정 행을 찾고 만약에 행이 존재하면 그 행의 값을 Scan하여 특정 값을 가져옴
 	err := db.Database.QueryRow("SELECT * FROM writedream.issues WHERE id = ?", id).Scan(&issue.Id, &issue.Title, &issue.Content, &issue.ViewCount, &issue.Created_At, &issue.Updated_At)
 
+	if err != nil {
+		errorhandle.ErrorHandler(c, err)
+		return
+	}
+
 	// 특정 issue를 검색할 때마다 issue의 view_count 열의 값을 1씩 올려줌
-	db.Database.Exec("UPDATE writedream.issues SET view_count = view_count + 1 WHERE id = ?", id)
+	_, err = db.Database.Exec("UPDATE writedream.issues SET view_count = view_count + 1 WHERE id = ?", id)
 
 	if err != nil {
 		errorhandle.ErrorHandler(c, err)
@@ -91,5 +96,69 @@ func FindIssueById(c *gin.Context) {
 
 	c.JSON(http.StatusOK, gin.H{
 		"Find Success:": issue,
+	})
+}
+
+func UpdateIssue(c *gin.Context) {
+	id := c.Param("id")
+
+	if len(id) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Error": "id가 없으면 검색할 수 없습니다.",
+		})
+		return
+	}
+
+	var issue models.IssueModel
+
+	// Body로 들어오는 JSON 값을 UpdateIssueDTO 객체 값에 맞게 매핑
+	if err := c.BindJSON(&issue); err != nil {
+		errorhandle.ErrorHandler(c, err)
+		return
+	}
+
+	// 만약 Body에 들어온 Title 혹은 Content가 빈 문자열이라면 에러 반환
+	if len(issue.Title) == 0 || len(issue.Content) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Error": "Title 혹은 Content의 문자 길이가 너무 짧습니다.",
+		})
+		return
+	}
+
+	// Update Query를 사용하여 Issue 테이블의 Id에 맞는 raw를 Update 해줌
+	_, err := db.Database.Exec("UPDATE writedream.issues SET title = ?, content = ? WHERE id = ?", issue.Title, issue.Content, id)
+
+	// 만약에 업데이트를 했는데 오류가 생겼다면 에러
+	if err != nil {
+		errorhandle.ErrorHandler(c, err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"Issue Update Success, Updated Issue Id: ": id,
+	})
+}
+
+func DeleteIssue(c *gin.Context) {
+	id := c.Param("id")
+
+	if len(id) == 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Error": "id가 없으면 검색할 수 없습니다.",
+		})
+		return
+	}
+
+	// Delete Query를 사용하여 Issue 테이블에 Id에 맞는 raw을 삭제해줌
+	_, err := db.Database.Exec("DELETE FROM writedream.issues WHERE id = ?", id)
+
+	// Delete를 할 때 오류가 생겼다면...
+	if err != nil {
+		errorhandle.ErrorHandler(c, err)
+		return
+	}
+
+	c.JSON(http.StatusCreated, gin.H{
+		"Delete Success, Deleted id: ": id,
 	})
 }

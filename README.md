@@ -11,3 +11,7 @@
 ## 2. 
 * Create Error Handler
 * Add Handler ( Create Issue, Find Issue By Id )
+
+## 3. 
+* Add Handler ( Update Issue, Delete Issue )
+* Create Set Header Middleware
