@@ -11,10 +11,10 @@ import (
 )
 
 func GetAllIssueList(c *gin.Context) {
-	var issues []models.IssueModel
+	var issues []models.IssueListModel
 
 	// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
-	rows, err := db.Database.Query("SELECT * FROM writedream.issues")
+	rows, err := db.Database.Query("select iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from writedream.issues AS iss inner join writedream.memos AS mms on iss.id = mms.issue_id GROUP BY iss.id")
 
 	if err != nil {
 		errorHandler.ErrorHandler(c, err)
@@ -23,9 +23,9 @@ func GetAllIssueList(c *gin.Context) {
 
 	// rows 변수를 한 행씩 읽어내려가는데 마지막 행을 읽고 다음 행은 없는 행이 되니까 false를 return, 반복문이 끝남
 	for rows.Next() {
-		var issue models.IssueModel
+		var issue models.IssueListModel
 
-		rows.Scan(&issue.Id, &issue.Title, &issue.Content, &issue.ViewCount, &issue.Created_At, &issue.Updated_At)
+		rows.Scan(&issue.Id, &issue.Title, &issue.Content, &issue.ViewCount, &issue.Created_At, &issue.Updated_At, &issue.Memo_Count)
 
 		issues = append(issues, issue)
 	}
