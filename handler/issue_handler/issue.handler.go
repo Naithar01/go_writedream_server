@@ -5,7 +5,7 @@ import (
 
 	"github.com/Naithar01/go_write_dream/db"
 	"github.com/Naithar01/go_write_dream/dto"
-	errorhandle "github.com/Naithar01/go_write_dream/errorHandle"
+	errorHandler "github.com/Naithar01/go_write_dream/handler/error_handler"
 	"github.com/Naithar01/go_write_dream/models"
 	"github.com/gin-gonic/gin"
 )
@@ -17,7 +17,7 @@ func GetAllIssueList(c *gin.Context) {
 	rows, err := db.Database.Query("SELECT * FROM writedream.issues")
 
 	if err != nil {
-		errorhandle.ErrorHandler(c, err)
+		errorHandler.ErrorHandler(c, err)
 		return
 	}
 
@@ -31,7 +31,7 @@ func GetAllIssueList(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"Issues": issues,
+		"issues": issues,
 	})
 }
 
@@ -39,7 +39,7 @@ func CreateIssue(c *gin.Context) {
 	var issue dto.CreateIssueDTO
 
 	if err := c.BindJSON(&issue); err != nil {
-		errorhandle.ErrorHandler(c, err)
+		errorHandler.ErrorHandler(c, err)
 		return
 	}
 
@@ -55,7 +55,7 @@ func CreateIssue(c *gin.Context) {
 	create_issue, err := db.Database.Exec("INSERT INTO writedream.issues (title, content) VALUES (?, ?)", issue.Title, issue.Content)
 
 	if err != nil {
-		errorhandle.ErrorHandler(c, err)
+		errorHandler.ErrorHandler(c, err)
 		return
 	}
 
@@ -64,12 +64,12 @@ func CreateIssue(c *gin.Context) {
 	created_issue_id, err := create_issue.LastInsertId()
 
 	if err != nil {
-		errorhandle.ErrorHandler(c, err)
+		errorHandler.ErrorHandler(c, err)
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"Issue Create Success, Created Issue Id: ": created_issue_id,
+		"id": created_issue_id,
 	})
 }
 
@@ -82,7 +82,7 @@ func FindIssueById(c *gin.Context) {
 	err := db.Database.QueryRow("SELECT * FROM writedream.issues WHERE id = ?", id).Scan(&issue.Id, &issue.Title, &issue.Content, &issue.ViewCount, &issue.Created_At, &issue.Updated_At)
 
 	if err != nil {
-		errorhandle.ErrorHandler(c, err)
+		errorHandler.ErrorHandler(c, err)
 		return
 	}
 
@@ -90,12 +90,12 @@ func FindIssueById(c *gin.Context) {
 	_, err = db.Database.Exec("UPDATE writedream.issues SET view_count = view_count + 1 WHERE id = ?", id)
 
 	if err != nil {
-		errorhandle.ErrorHandler(c, err)
+		errorHandler.ErrorHandler(c, err)
 		return
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"Find Success:": issue,
+		"issue": issue,
 	})
 }
 
@@ -113,7 +113,7 @@ func UpdateIssue(c *gin.Context) {
 
 	// Body로 들어오는 JSON 값을 UpdateIssueDTO 객체 값에 맞게 매핑
 	if err := c.BindJSON(&issue); err != nil {
-		errorhandle.ErrorHandler(c, err)
+		errorHandler.ErrorHandler(c, err)
 		return
 	}
 
@@ -130,12 +130,12 @@ func UpdateIssue(c *gin.Context) {
 
 	// 만약에 업데이트를 했는데 오류가 생겼다면 에러
 	if err != nil {
-		errorhandle.ErrorHandler(c, err)
+		errorHandler.ErrorHandler(c, err)
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"Issue Update Success, Updated Issue Id: ": id,
+		"id": id,
 	})
 }
 
@@ -154,11 +154,11 @@ func DeleteIssue(c *gin.Context) {
 
 	// Delete를 할 때 오류가 생겼다면...
 	if err != nil {
-		errorhandle.ErrorHandler(c, err)
+		errorHandler.ErrorHandler(c, err)
 		return
 	}
 
 	c.JSON(http.StatusCreated, gin.H{
-		"Delete Success, Deleted id: ": id,
+		"id": id,
 	})
 }
