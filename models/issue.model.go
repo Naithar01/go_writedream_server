@@ -32,8 +32,3 @@ type IssueFindModel struct {
 	Updated_At time.Time   `json:"updated_at"`
 	Memos      []MemoModel `json:"memos"`
 }
-
-type IssuePaginationModel struct {
-	Page       int `json:"page" query:"page" form:"page"`
-	Page_Limit int `json:"Page_Limit" query:"page_limit" form:"page_limit"`
-}

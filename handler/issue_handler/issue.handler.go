@@ -13,7 +13,7 @@ import (
 func GetAllIssueList(c *gin.Context) {
 	var issues []models.IssueListModel
 
-	var issues_pagination models.IssuePaginationModel
+	var issues_pagination dto.IssuePaginationDTO
 
 	// Query Parameter로 들어오는 Page, Page_limit의 값을 각 변수에 담아줌
 	if err := c.BindQuery(&issues_pagination); err != nil {
@@ -24,7 +24,7 @@ func GetAllIssueList(c *gin.Context) {
 	// 만약에 Query가 없는 요청이 왔다면 모든 Issue List를 반환
 	if issues_pagination.Page == 0 && issues_pagination.Page_Limit == 0 {
 		// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
-		rows, err := db.Database.Query("select iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from writedream.issues AS iss inner join writedream.memos AS mms on iss.id = mms.issue_id GROUP BY iss.id")
+		rows, err := db.Database.Query("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from writedream.issues AS iss LEFT OUTER JOIN writedream.memos AS mms on iss.id = mms.issue_id GROUP BY iss.id")
 
 		if err != nil {
 			errorHandler.ErrorHandler(c, err)
@@ -74,6 +74,22 @@ func GetAllIssueList(c *gin.Context) {
 }
 
 func CreateIssue(c *gin.Context) {
+	var issues_category dto.CreateIssueCategoryDTO
+
+	// Query Parameter로 들어오는 category를 issues_category 변수에 담아줌
+	if err := c.BindQuery(&issues_category); err != nil {
+		errorHandler.ErrorHandler(c, err)
+		return
+	}
+
+	// Query로 들어온 category_id가 비어있으면 에러 반환
+	if issues_category.Category_Id <= 0 {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Error": "존재하지 않은 Category_id 입니다.",
+		})
+		return
+	}
+
 	var issue dto.CreateIssueDTO
 
 	if err := c.BindJSON(&issue); err != nil {
@@ -100,6 +116,13 @@ func CreateIssue(c *gin.Context) {
 	// 위에서 코드에서 테이블에 insert에 성공하였다면 새로운 행이 생겼다는 뜻이고
 	// 마지막에 생긴 행이 될테니까 마지막 행의 Id 값을 가져오면 방금 생성했던 Issue의 Id를 가져올 수 있다.
 	created_issue_id, err := create_issue.LastInsertId()
+
+	if err != nil {
+		errorHandler.ErrorHandler(c, err)
+		return
+	}
+
+	_, err = db.Database.Exec("INSERT INTO writedream.issue_category (issue_id, category_id) VALUES (?, ?)", created_issue_id, issues_category.Category_Id)
 
 	if err != nil {
 		errorHandler.ErrorHandler(c, err)
@@ -213,6 +236,7 @@ func DeleteIssue(c *gin.Context) {
 
 	// Delete Query를 사용하여 Issue 테이블에 Id에 맞는 raw을 삭제해줌
 	_, err := db.Database.Exec("DELETE FROM writedream.issues WHERE id = ?", id)
+	db.Database.Exec("DELETE FROM writedream.issue_category WHERE issue_id = ? or category_id = ?", id, id)
 
 	// Delete를 할 때 오류가 생겼다면...
 	if err != nil {

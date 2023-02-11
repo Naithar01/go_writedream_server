@@ -1,6 +1,7 @@
 package router
 
 import (
+	categoryhandler "github.com/Naithar01/go_write_dream/handler/category_handler"
 	issueHandler "github.com/Naithar01/go_write_dream/handler/issue_handler"
 	memoHandler "github.com/Naithar01/go_write_dream/handler/memo_handler"
 	"github.com/Naithar01/go_write_dream/middleware"
@@ -15,6 +16,12 @@ func InitRouter() *gin.Engine {
 	api := app.Group("/api")
 	api.Use(middleware.SetHader)
 	{
+		categories := api.Group("/categories")
+		{
+			categories.GET("/", categoryhandler.GetAllCategoryList)
+			categories.POST("/", categoryhandler.CreateCategory)
+			categories.DELETE("/:id", categoryhandler.DeleteCategory)
+		}
 		issue := api.Group("/issues")
 		{
 			issue.GET("/", issueHandler.GetAllIssueList)
