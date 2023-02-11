@@ -13,26 +13,64 @@ import (
 func GetAllIssueList(c *gin.Context) {
 	var issues []models.IssueListModel
 
-	// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
-	rows, err := db.Database.Query("select iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from writedream.issues AS iss inner join writedream.memos AS mms on iss.id = mms.issue_id GROUP BY iss.id")
+	var issues_pagination models.IssuePaginationModel
 
-	if err != nil {
+	// Query Parameter로 들어오는 Page, Page_limit의 값을 각 변수에 담아줌
+	if err := c.BindQuery(&issues_pagination); err != nil {
 		errorHandler.ErrorHandler(c, err)
 		return
 	}
 
-	// rows 변수를 한 행씩 읽어내려가는데 마지막 행을 읽고 다음 행은 없는 행이 되니까 false를 return, 반복문이 끝남
-	for rows.Next() {
-		var issue models.IssueListModel
+	// 만약에 Query가 없는 요청이 왔다면 모든 Issue List를 반환
+	if issues_pagination.Page == 0 && issues_pagination.Page_Limit == 0 {
+		// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
+		rows, err := db.Database.Query("select iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from writedream.issues AS iss inner join writedream.memos AS mms on iss.id = mms.issue_id GROUP BY iss.id")
 
-		rows.Scan(&issue.Id, &issue.Title, &issue.Content, &issue.ViewCount, &issue.Created_At, &issue.Updated_At, &issue.Memo_Count)
+		if err != nil {
+			errorHandler.ErrorHandler(c, err)
+			return
+		}
 
-		issues = append(issues, issue)
+		// rows 변수를 한 행씩 읽어내려가는데 마지막 행을 읽고 다음 행은 없는 행이 되니까 false를 return, 반복문이 끝남
+		for rows.Next() {
+			var issue models.IssueListModel
+
+			rows.Scan(&issue.Id, &issue.Title, &issue.Content, &issue.ViewCount, &issue.Created_At, &issue.Updated_At, &issue.Memo_Count)
+
+			issues = append(issues, issue)
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"issues": issues,
+		})
+	} else if issues_pagination.Page >= 1 && issues_pagination.Page_Limit >= 1 { // Query로 들어온 Page 혹은 Page_limit이 둘 다 있어야지만 Issue List 반환, 하나라도 없으면 작동 X
+		// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
+		// Limit을 사용하여 페이징 처리를 해줄건데, (Page -1) * Page_limit, Page_limit * Page
+
+		rows, err := db.Database.Query("select iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) from issues AS iss LEFT OUTER join memos AS mms on iss.id = mms.issue_id GROUP BY iss.id limit ?, ?", (issues_pagination.Page-1)*issues_pagination.Page_Limit, issues_pagination.Page*issues_pagination.Page_Limit)
+
+		if err != nil {
+			errorHandler.ErrorHandler(c, err)
+			return
+		}
+
+		// rows 변수를 한 행씩 읽어내려가는데 마지막 행을 읽고 다음 행은 없는 행이 되니까 false를 return, 반복문이 끝남
+		for rows.Next() {
+			var issue models.IssueListModel
+
+			rows.Scan(&issue.Id, &issue.Title, &issue.Content, &issue.ViewCount, &issue.Created_At, &issue.Updated_At, &issue.Memo_Count)
+
+			issues = append(issues, issue)
+		}
+
+		c.JSON(http.StatusOK, gin.H{
+			"issues": issues,
+		})
+	} else {
+		c.JSON(http.StatusBadRequest, gin.H{
+			"Error": "Error",
+		})
 	}
-
-	c.JSON(http.StatusOK, gin.H{
-		"issues": issues,
-	})
 }
 
 func CreateIssue(c *gin.Context) {
@@ -76,7 +114,7 @@ func CreateIssue(c *gin.Context) {
 func FindIssueById(c *gin.Context) {
 	id := c.Param("id")
 
-	var issue models.IssueModel
+	var issue models.IssueFindModel
 
 	// issue 테이블에서 id로 특정 행을 찾고 만약에 행이 존재하면 그 행의 값을 Scan하여 특정 값을 가져옴
 	err := db.Database.QueryRow("SELECT * FROM writedream.issues WHERE id = ?", id).Scan(&issue.Id, &issue.Title, &issue.Content, &issue.ViewCount, &issue.Created_At, &issue.Updated_At)
@@ -93,6 +131,30 @@ func FindIssueById(c *gin.Context) {
 		errorHandler.ErrorHandler(c, err)
 		return
 	}
+
+	// Memo 테이블에서 Issue의 id를 외래키로 저장하고 있는 행을 모두 가져옴
+	rows, err := db.Database.Query("SELECT * FROM writedream.memos WHERE issue_id = ?", id)
+
+	if err != nil {
+		errorHandler.ErrorHandler(c, err)
+		return
+	}
+
+	var memos []models.MemoModel
+
+	// Rows에 SELECT한 행들이 모두 들어간다.
+	// 각 행의 값을 Scan하여 Memos에 append (push) 해주고
+	// 모든 행을 다 읽으면 반복문 탈출
+	// memos를 issue에 Memos 컬럼에 넣어준다.
+	for rows.Next() {
+		var memo models.MemoModel
+
+		rows.Scan(&memo.Id, &memo.Issue_Id, &memo.Text, &memo.Created_At)
+
+		memos = append(memos, memo)
+	}
+
+	issue.Memos = memos
 
 	c.JSON(http.StatusOK, gin.H{
 		"issue": issue,
