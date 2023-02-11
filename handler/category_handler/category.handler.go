@@ -15,6 +15,7 @@ func GetAllCategoryList(c *gin.Context) {
 
 	// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
 	rows, err := db.Database.Query("SELECT * FROM writedream.categories;")
+	defer rows.Close()
 
 	if err != nil {
 		errorHandler.ErrorHandler(c, err)

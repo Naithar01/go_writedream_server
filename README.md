@@ -37,10 +37,11 @@
 ## 6. 
 * Fix Bug Handler ( Get All Issue List )를 가져올 때 Memo 테이블에서 Issue id를 참조하는 행만 가져오는 버그를 수정
 * Create Categories Table, Model, Handler 
-* Add Handler ( Geet All Category List, Create Category, Delete Category ) 
+* Add Handler ( Get All Category List, Create Category, Delete Category ) 
 * Create Issue_Categroy Table
 * Edit Dir ( IssuePaginationModel -> IssuePaginationDTO ) models -> dto
 * Edit Handler ( Issue를 저장할 때 Category_Issue 테이블에 Issue 테이블의 Id와 Category 테이블의 Id를 같이 저장하도록 구현 ) ( Issue를 삭제하거나, Category를 삭제하면 Category_Issue 테이블의 행도 같이 삭제하게 구현 )
 
 ## Update 2023-02-12 24:50
-* Issue List를 가져올 때 Query로 받는 Category를 기준으로 가져오게 구현
+* Issue List를 가져올 때 Query로 받는 Category를 기준으로 Issue를 가져오게 구현 ( OK )
+* Edit Handler ( 모든 Handler에 Rows를 Close 해주는 코드를 추가 )
