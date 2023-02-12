@@ -44,4 +44,10 @@
 
 ## Update 2023-02-12 24:50
 * Issue List를 가져올 때 Query로 받는 Category를 기준으로 Issue를 가져오게 구현 ( OK )
+
+## 7.
 * Edit Handler ( 모든 Handler에 Rows를 Close 해주는 코드를 추가 )
+
+## 8.
+* Edit Handler ( Category 이름으로 가져오는 Issue와, 그냥 모든 Issue를 가져오는 Handler 추가 )
+* Fix Bug Handler ( Issue List를 가져올 때 페이징 처리 코드 수정 )

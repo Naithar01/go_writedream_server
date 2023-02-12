@@ -22,45 +22,11 @@ func GetAllIssueList(c *gin.Context) {
 		return
 	}
 
-	// Query로 받은 Category의 id가 0보다 작은지만 확인
-	if issues_Query.Category_Id <= 0 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"Error": "올바르지 않은 Category의 Id입니다.",
-		})
-		return
-	}
-
-	rows, err := db.Database.Query("SELECT issue_id FROM writedream.issue_category WHERE category_id = ?", issues_Query.Category_Id)
-	defer rows.Close()
-
-	if err != nil {
-		errorHandler.ErrorHandler(c, err)
-		return
-	}
-
-	var issue_id_list string
-
-	for rows.Next() {
-		var issue_id int
-		rows.Scan(&issue_id)
-		issue_id_list = fmt.Sprintf("%s'%d',", issue_id_list, issue_id)
-	}
-
-	// Query로 받은 Category Id로 Issue를 검색했을 때의 결과물이 하나도 없으면 에러 반환
-	if len(issue_id_list) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"Error": "해당 Category Id로 작성된 Issue가 없습니다.",
-		})
-		return
-	}
-
-	issue_id_list = issue_id_list[:len(issue_id_list)-1]
-
-	// 만약에 Query가 없는 요청이 왔다면 모든 Issue List를 반환
-	if issues_Query.Page == 0 && issues_Query.Page_Limit == 0 {
-		sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from writedream.issues AS iss LEFT OUTER JOIN writedream.memos AS mms on iss.id = mms.issue_id WHERE iss.id in (%s) GROUP BY iss.id", issue_id_list)
-		// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
-		rows, err := db.Database.Query(sql)
+	// Category Id Query가 있을 때
+	// - 페이징 처리 Query가 없을 때
+	// - 페이징 처리 Query가 있을 때
+	if issues_Query.Category_Id >= 1 {
+		rows, err := db.Database.Query("SELECT issue_id FROM writedream.issue_category WHERE category_id = ?", issues_Query.Category_Id)
 		defer rows.Close()
 
 		if err != nil {
@@ -68,48 +34,128 @@ func GetAllIssueList(c *gin.Context) {
 			return
 		}
 
-		// rows 변수를 한 행씩 읽어내려가는데 마지막 행을 읽고 다음 행은 없는 행이 되니까 false를 return, 반복문이 끝남
+		var issue_id_list string
+
 		for rows.Next() {
-			var issue models.IssueListModel
-
-			rows.Scan(&issue.Id, &issue.Title, &issue.Content, &issue.ViewCount, &issue.Created_At, &issue.Updated_At, &issue.Memo_Count)
-
-			issues = append(issues, issue)
+			var issue_id int
+			rows.Scan(&issue_id)
+			issue_id_list = fmt.Sprintf("%s'%d',", issue_id_list, issue_id)
 		}
 
-		c.JSON(http.StatusOK, gin.H{
-			"issues": issues,
-		})
-	} else if issues_Query.Page >= 1 && issues_Query.Page_Limit >= 1 { // Query로 들어온 Page 혹은 Page_limit이 둘 다 있어야지만 Issue List 반환, 하나라도 없으면 작동 X
-		sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from writedream.issues AS iss LEFT OUTER JOIN writedream.memos AS mms on iss.id = mms.issue_id WHERE iss.id in (%s) GROUP BY iss.id limit %d, %d", issue_id_list, (issues_Query.Page-1)*issues_Query.Page_Limit, issues_Query.Page*issues_Query.Page_Limit)
+		issue_id_list = issue_id_list[:len(issue_id_list)-1]
 
-		// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
-		// Limit을 사용하여 페이징 처리를 해줄건데, (Page -1) * Page_limit, Page_limit * Page
-		rows, err := db.Database.Query(sql)
-		defer rows.Close()
+		if issues_Query.Category_Id >= 1 && issues_Query.Page <= 0 && issues_Query.Page_Limit <= 0 { // Category Query가 있으면서, Page, Page_Limit Query가 없으면...
+			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from writedream.issues AS iss LEFT OUTER JOIN writedream.memos AS mms on iss.id = mms.issue_id WHERE iss.id in (%s) GROUP BY iss.id", issue_id_list)
+			// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
+			rows, err := db.Database.Query(sql)
+			defer rows.Close()
 
-		if err != nil {
-			errorHandler.ErrorHandler(c, err)
+			if err != nil {
+				errorHandler.ErrorHandler(c, err)
+				return
+			}
+
+			// rows 변수를 한 행씩 읽어내려가는데 마지막 행을 읽고 다음 행은 없는 행이 되니까 false를 return, 반복문이 끝남
+			for rows.Next() {
+				var issue models.IssueListModel
+
+				rows.Scan(&issue.Id, &issue.Title, &issue.Content, &issue.ViewCount, &issue.Created_At, &issue.Updated_At, &issue.Memo_Count)
+
+				issues = append(issues, issue)
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"issues": issues,
+			})
+			return
+		} else if issues_Query.Category_Id >= 1 && issues_Query.Page >= 1 && issues_Query.Page_Limit >= 1 { // Category Query가 있으면서, Page, Page_Limit Query가 둘 다 있으면...
+			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from writedream.issues AS iss LEFT OUTER JOIN writedream.memos AS mms on iss.id = mms.issue_id WHERE iss.id in (%s) GROUP BY iss.id limit %d, %d", issue_id_list, (issues_Query.Page-1)*issues_Query.Page_Limit, issues_Query.Page_Limit)
+
+			// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
+			// Limit을 사용하여 페이징 처리를 해줄건데, (Page -1) * Page_limit, Page_limit * Page
+			rows, err := db.Database.Query(sql)
+			defer rows.Close()
+
+			if err != nil {
+				errorHandler.ErrorHandler(c, err)
+				return
+			}
+
+			// rows 변수를 한 행씩 읽어내려가는데 마지막 행을 읽고 다음 행은 없는 행이 되니까 false를 return, 반복문이 끝남
+			for rows.Next() {
+				var issue models.IssueListModel
+
+				rows.Scan(&issue.Id, &issue.Title, &issue.Content, &issue.ViewCount, &issue.Created_At, &issue.Updated_At, &issue.Memo_Count)
+
+				issues = append(issues, issue)
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"issues": issues,
+			})
 			return
 		}
 
-		// rows 변수를 한 행씩 읽어내려가는데 마지막 행을 읽고 다음 행은 없는 행이 되니까 false를 return, 반복문이 끝남
-		for rows.Next() {
-			var issue models.IssueListModel
-
-			rows.Scan(&issue.Id, &issue.Title, &issue.Content, &issue.ViewCount, &issue.Created_At, &issue.Updated_At, &issue.Memo_Count)
-
-			issues = append(issues, issue)
-		}
-
-		c.JSON(http.StatusOK, gin.H{
-			"issues": issues,
-		})
 	} else {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"Error": "Error",
-		})
+		// Category Id Query가 없을 때
+		// - 페이징 처리 Query가 없을 때
+		// - 페이징 처리 Query가 있을 때
+		if issues_Query.Category_Id <= 0 && issues_Query.Page >= 1 && issues_Query.Page_Limit >= 1 { // Category Query가 없으면서, Page, Page_Limit Query가 있으면...
+			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from writedream.issues AS iss LEFT OUTER JOIN writedream.memos AS mms on iss.id = mms.issue_id GROUP BY iss.id limit %d, %d", (issues_Query.Page-1)*issues_Query.Page_Limit, issues_Query.Page_Limit)
+			// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
+			// Limit을 사용하여 페이징 처리를 해줄건데, (Page -1) * Page_limit, Page_limit * Page
+			rows, err := db.Database.Query(sql)
+			defer rows.Close()
+
+			if err != nil {
+				errorHandler.ErrorHandler(c, err)
+				return
+			}
+
+			// rows 변수를 한 행씩 읽어내려가는데 마지막 행을 읽고 다음 행은 없는 행이 되니까 false를 return, 반복문이 끝남
+			for rows.Next() {
+				var issue models.IssueListModel
+
+				rows.Scan(&issue.Id, &issue.Title, &issue.Content, &issue.ViewCount, &issue.Created_At, &issue.Updated_At, &issue.Memo_Count)
+
+				issues = append(issues, issue)
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"issues": issues,
+			})
+			return
+		} else if issues_Query.Category_Id <= 0 && issues_Query.Page <= 0 && issues_Query.Page_Limit <= 0 { // Catgory Query가 없으면서, Page, Page_Limit Query가 없으면...
+			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from writedream.issues AS iss LEFT OUTER JOIN writedream.memos AS mms on iss.id = mms.issue_id GROUP BY iss.id")
+			// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
+			rows, err := db.Database.Query(sql)
+			defer rows.Close()
+
+			if err != nil {
+				errorHandler.ErrorHandler(c, err)
+				return
+			}
+
+			// rows 변수를 한 행씩 읽어내려가는데 마지막 행을 읽고 다음 행은 없는 행이 되니까 false를 return, 반복문이 끝남
+			for rows.Next() {
+				var issue models.IssueListModel
+
+				rows.Scan(&issue.Id, &issue.Title, &issue.Content, &issue.ViewCount, &issue.Created_At, &issue.Updated_At, &issue.Memo_Count)
+
+				issues = append(issues, issue)
+			}
+
+			c.JSON(http.StatusOK, gin.H{
+				"issues": issues,
+			})
+			return
+		}
 	}
+
+	c.JSON(http.StatusBadRequest, gin.H{
+		"Error": "Error",
+	})
+	return
 }
 
 func CreateIssue(c *gin.Context) {
