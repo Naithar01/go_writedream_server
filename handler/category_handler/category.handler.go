@@ -1,16 +1,12 @@
 package categoryhandler
 
 import (
-	"net/http"
-
 	"github.com/Naithar01/go_write_dream/db"
 	"github.com/Naithar01/go_write_dream/dto"
-	errorHandler "github.com/Naithar01/go_write_dream/handler/error_handler"
 	"github.com/Naithar01/go_write_dream/models"
-	"github.com/gin-gonic/gin"
 )
 
-func GetAllCategoryList(c *gin.Context) {
+func GetAllCategoryList() ([]models.CategoryModel, error) {
 	var categories []models.CategoryModel
 
 	// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
@@ -18,8 +14,7 @@ func GetAllCategoryList(c *gin.Context) {
 	defer rows.Close()
 
 	if err != nil {
-		errorHandler.ErrorHandler(c, err)
-		return
+		return []models.CategoryModel{}, err
 	}
 
 	// rows 변수를 한 행씩 읽어내려가는데 마지막 행을 읽고 다음 행은 없는 행이 되니까 false를 return, 반복문이 끝남
@@ -31,58 +26,33 @@ func GetAllCategoryList(c *gin.Context) {
 		categories = append(categories, category)
 	}
 
-	c.JSON(http.StatusOK, gin.H{
-		"categories": categories,
-	})
+	return categories, nil
 }
 
-func CreateCategory(c *gin.Context) {
-	var category dto.CreateCategoryDTO
-
-	if err := c.BindJSON(&category); err != nil {
-		errorHandler.ErrorHandler(c, err)
-		return
-	}
-
+func CreateCategory(createCategoryDTO dto.CreateCategoryDTO) (int64, error) {
 	// Body로 받은 Title을 insert 해줌
-	create_category, err := db.Database.Exec("INSERT INTO writedream.categories (title) VALUES (?)", category.Title)
+	create_category, err := db.Database.Exec("INSERT INTO writedream.categories (title) VALUES (?)", createCategoryDTO.Title)
 
 	if err != nil {
-		errorHandler.ErrorHandler(c, err)
-		return
+		return 0, err
 	}
 
 	created_category_id, err := create_category.LastInsertId()
 
 	if err != nil {
-		errorHandler.ErrorHandler(c, err)
-		return
+		return 0, err
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"id": created_category_id,
-	})
+	return created_category_id, nil
 }
 
-func DeleteCategory(c *gin.Context) {
-	id := c.Param("id")
-
-	if len(id) == 0 {
-		c.JSON(http.StatusBadRequest, gin.H{
-			"Error": "id가 없으면 검색할 수 없습니다.",
-		})
-		return
-	}
-
+func DeleteCategory(id int) (int, error) {
 	_, err := db.Database.Exec("DELETE FROM writedream.categories WHERE id = ?", id)
 	db.Database.Exec("DELETE FROM writedream.issue_category WHERE id = ?", id)
 
 	if err != nil {
-		errorHandler.ErrorHandler(c, err)
-		return
+		return 0, err
 	}
 
-	c.JSON(http.StatusCreated, gin.H{
-		"id": id,
-	})
+	return id, nil
 }

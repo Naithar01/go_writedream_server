@@ -51,3 +51,7 @@
 ## 8.
 * Edit Handler ( Category 이름으로 가져오는 Issue와, 그냥 모든 Issue를 가져오는 Handler 추가 )
 * Fix Bug Handler ( Issue List를 가져올 때 페이징 처리 코드 수정 )
+
+## 9. 
+* Create Controllers ( Dir )
+* Handler 디렉토리에서 특정 Action을 취하고 Controller에서 Router 요청을 받을 수 있게 수정
