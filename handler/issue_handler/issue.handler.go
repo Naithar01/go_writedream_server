@@ -9,7 +9,7 @@ import (
 	"github.com/Naithar01/go_write_dream/models"
 )
 
-func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, error) {
+func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, int, error) {
 	var issues []models.IssueListModel
 
 	// Category Id Query가 있을 때
@@ -20,7 +20,7 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 		defer rows.Close()
 
 		if err != nil {
-			return []models.IssueListModel{}, err
+			return []models.IssueListModel{}, 0, err
 		}
 
 		var issue_id_list string
@@ -29,6 +29,10 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 			var issue_id int
 			rows.Scan(&issue_id)
 			issue_id_list = fmt.Sprintf("%s'%d',", issue_id_list, issue_id)
+		}
+
+		if len(issue_id_list) == 0 {
+			return []models.IssueListModel{}, 0, errors.New("검색된 Issue가 없습니다.")
 		}
 
 		issue_id_list = issue_id_list[:len(issue_id_list)-1]
@@ -40,7 +44,7 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 			defer rows.Close()
 
 			if err != nil {
-				return []models.IssueListModel{}, err
+				return []models.IssueListModel{}, 0, err
 			}
 
 			// rows 변수를 한 행씩 읽어내려가는데 마지막 행을 읽고 다음 행은 없는 행이 되니까 false를 return, 반복문이 끝남
@@ -52,7 +56,7 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 				issues = append(issues, issue)
 			}
 
-			return issues, nil
+			return issues, len(issues), nil
 		} else if issues_Query.Category_Id >= 1 && issues_Query.Page >= 1 && issues_Query.Page_Limit >= 1 { // Category Query가 있으면서, Page, Page_Limit Query가 둘 다 있으면...
 			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from writedream.issues AS iss LEFT OUTER JOIN writedream.memos AS mms on iss.id = mms.issue_id WHERE iss.id in (%s) GROUP BY iss.id limit %d, %d", issue_id_list, (issues_Query.Page-1)*issues_Query.Page_Limit, issues_Query.Page_Limit)
 
@@ -62,8 +66,16 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 			defer rows.Close()
 
 			if err != nil {
-				return []models.IssueListModel{}, err
+				return []models.IssueListModel{}, 0, err
+			}
 
+			// 몇 개의 Issue가 있는지 체크
+			sql = fmt.Sprintf("SELECT count(iss.id) AS issue_count from writedream.issues AS iss WHERE iss.id in (%s)", issue_id_list)
+			var issue_count int
+			err = db.Database.QueryRow(sql).Scan(&issue_count)
+
+			if err != nil {
+				return []models.IssueListModel{}, 0, err
 			}
 
 			// rows 변수를 한 행씩 읽어내려가는데 마지막 행을 읽고 다음 행은 없는 행이 되니까 false를 return, 반복문이 끝남
@@ -75,7 +87,7 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 				issues = append(issues, issue)
 			}
 
-			return issues, nil
+			return issues, issue_count, nil
 		}
 
 	} else {
@@ -90,7 +102,16 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 			defer rows.Close()
 
 			if err != nil {
-				return []models.IssueListModel{}, err
+				return []models.IssueListModel{}, 0, err
+			}
+
+			// 몇 개의 Issue가 있는지 체크
+			sql = fmt.Sprintf("SELECT count(iss.id) AS issue_count from writedream.issues AS iss")
+			var issue_count int
+			err = db.Database.QueryRow(sql).Scan(&issue_count)
+
+			if err != nil {
+				return []models.IssueListModel{}, 0, err
 			}
 
 			// rows 변수를 한 행씩 읽어내려가는데 마지막 행을 읽고 다음 행은 없는 행이 되니까 false를 return, 반복문이 끝남
@@ -102,7 +123,7 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 				issues = append(issues, issue)
 			}
 
-			return issues, nil
+			return issues, issue_count, nil
 		} else if issues_Query.Category_Id <= 0 && issues_Query.Page <= 0 && issues_Query.Page_Limit <= 0 { // Catgory Query가 없으면서, Page, Page_Limit Query가 없으면...
 			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from writedream.issues AS iss LEFT OUTER JOIN writedream.memos AS mms on iss.id = mms.issue_id GROUP BY iss.id")
 			// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
@@ -110,7 +131,7 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 			defer rows.Close()
 
 			if err != nil {
-				return []models.IssueListModel{}, err
+				return []models.IssueListModel{}, 0, err
 			}
 
 			// rows 변수를 한 행씩 읽어내려가는데 마지막 행을 읽고 다음 행은 없는 행이 되니까 false를 return, 반복문이 끝남
@@ -122,11 +143,11 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 				issues = append(issues, issue)
 			}
 
-			return issues, nil
+			return issues, len(issues), nil
 		}
 	}
 
-	return []models.IssueListModel{}, errors.New("올바르지 않은 요청입니다.")
+	return []models.IssueListModel{}, 0, errors.New("올바르지 않은 요청입니다.")
 }
 
 func CreateIssue(issues_category dto.CreateIssueCategoryDTO, issue dto.CreateIssueDTO) (int64, error) {

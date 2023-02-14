@@ -27,7 +27,7 @@ func (ic *IssueController) GetAllIssueList(c *gin.Context) {
 		return
 	}
 
-	issues, err := issueHandler.GetAllIssueList(issues_Query)
+	issues, issues_count, err := issueHandler.GetAllIssueList(issues_Query)
 
 	if err != nil {
 		errorHandler.ErrorHandler(c, err)
@@ -35,7 +35,8 @@ func (ic *IssueController) GetAllIssueList(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, gin.H{
-		"issues": issues,
+		"issues":       issues,
+		"issues_count": issues_count,
 	})
 }
 
@@ -134,6 +135,7 @@ func (ic *IssueController) UpdateIssue(c *gin.Context) {
 		"id": updated_id,
 	})
 }
+
 func (ic *IssueController) DeleteIssue(c *gin.Context) {
 	id, _ := strconv.Atoi(c.Param("id"))
 
