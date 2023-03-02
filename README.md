@@ -72,4 +72,8 @@
 
 ## Update 2023-02-14 18:58
 
-- 모든 Issue List를 가져올 때 모든 Issue List의 갯수도 같이 뱉어주게 구현
+- 모든 Issue List를 가져올 때 모든 Issue List의 갯수도 같이 뱉어주게 구현 ( Ok )
+
+## Update 2023-02-19 03:31
+
+- Issue의 상세 페이지 (ReadIssue)에서 Memo도 페이징처리
