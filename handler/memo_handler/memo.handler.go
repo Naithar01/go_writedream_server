@@ -10,7 +10,7 @@ func GetAllMemoList() ([]models.MemoModel, error) {
 	var memos []models.MemoModel
 
 	// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
-	rows, err := db.Database.Query("SELECT * FROM writedream.memos")
+	rows, err := db.Database.Query("SELECT * FROM  memos")
 	defer rows.Close()
 
 	if err != nil {
@@ -31,7 +31,7 @@ func GetAllMemoList() ([]models.MemoModel, error) {
 
 func CreateMemo(issue_id int, createMemoDTO dto.CreateMemoDTO) (int64, error) {
 	// Body로 받은 Text와, Parmas로 받은 issueid의 값을 insert 해줌
-	create_memo, err := db.Database.Exec("INSERT INTO writedream.memos (issue_id, text) VALUES (?, ?)", issue_id, createMemoDTO.Text)
+	create_memo, err := db.Database.Exec("INSERT INTO  memos (issue_id, text) VALUES (?, ?)", issue_id, createMemoDTO.Text)
 
 	if err != nil {
 		return 0, err
@@ -49,7 +49,7 @@ func CreateMemo(issue_id int, createMemoDTO dto.CreateMemoDTO) (int64, error) {
 func FindMemoById(id int) (models.MemoModel, error) {
 	var memo models.MemoModel
 
-	err := db.Database.QueryRow("SELECT * FROM writedream.memos WHERE id = ?", id).Scan(&memo.Id, &memo.Issue_Id, &memo.Text, &memo.Created_At)
+	err := db.Database.QueryRow("SELECT * FROM  memos WHERE id = ?", id).Scan(&memo.Id, &memo.Issue_Id, &memo.Text, &memo.Created_At)
 
 	if err != nil {
 		return models.MemoModel{}, err
@@ -59,7 +59,7 @@ func FindMemoById(id int) (models.MemoModel, error) {
 }
 
 func DeleteMemo(id int) (int, error) {
-	_, err := db.Database.Exec("DELETE FROM writedream.memos WHERE id = ?", id)
+	_, err := db.Database.Exec("DELETE FROM  memos WHERE id = ?", id)
 
 	if err != nil {
 		return 0, err

@@ -16,7 +16,7 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 	// - 페이징 처리 Query가 없을 때
 	// - 페이징 처리 Query가 있을 때
 	if issues_Query.Category_Id >= 1 {
-		rows, err := db.Database.Query("SELECT issue_id FROM writedream.issue_category WHERE category_id = ?", issues_Query.Category_Id)
+		rows, err := db.Database.Query("SELECT issue_id FROM  issue_category WHERE category_id = ?", issues_Query.Category_Id)
 		defer rows.Close()
 
 		if err != nil {
@@ -38,7 +38,7 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 		issue_id_list = issue_id_list[:len(issue_id_list)-1]
 
 		if issues_Query.Category_Id >= 1 && issues_Query.Page <= 0 && issues_Query.Page_Limit <= 0 { // Category Query가 있으면서, Page, Page_Limit Query가 없으면...
-			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from writedream.issues AS iss LEFT OUTER JOIN writedream.memos AS mms on iss.id = mms.issue_id WHERE iss.id in (%s) GROUP BY iss.id", issue_id_list)
+			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from  issues AS iss LEFT OUTER JOIN  memos AS mms on iss.id = mms.issue_id WHERE iss.id in (%s) GROUP BY iss.id", issue_id_list)
 			// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
 			rows, err := db.Database.Query(sql)
 			defer rows.Close()
@@ -58,7 +58,7 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 
 			return issues, len(issues), nil
 		} else if issues_Query.Category_Id >= 1 && issues_Query.Page >= 1 && issues_Query.Page_Limit >= 1 { // Category Query가 있으면서, Page, Page_Limit Query가 둘 다 있으면...
-			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from writedream.issues AS iss LEFT OUTER JOIN writedream.memos AS mms on iss.id = mms.issue_id WHERE iss.id in (%s) GROUP BY iss.id limit %d, %d", issue_id_list, (issues_Query.Page-1)*issues_Query.Page_Limit, issues_Query.Page_Limit)
+			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from  issues AS iss LEFT OUTER JOIN  memos AS mms on iss.id = mms.issue_id WHERE iss.id in (%s) GROUP BY iss.id limit %d, %d", issue_id_list, (issues_Query.Page-1)*issues_Query.Page_Limit, issues_Query.Page_Limit)
 
 			// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
 			// Limit을 사용하여 페이징 처리를 해줄건데, (Page -1) * Page_limit, Page_limit * Page
@@ -70,7 +70,7 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 			}
 
 			// 몇 개의 Issue가 있는지 체크
-			sql = fmt.Sprintf("SELECT count(iss.id) AS issue_count from writedream.issues AS iss WHERE iss.id in (%s)", issue_id_list)
+			sql = fmt.Sprintf("SELECT count(iss.id) AS issue_count from  issues AS iss WHERE iss.id in (%s)", issue_id_list)
 			var issue_count int
 			err = db.Database.QueryRow(sql).Scan(&issue_count)
 
@@ -95,7 +95,7 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 		// - 페이징 처리 Query가 없을 때
 		// - 페이징 처리 Query가 있을 때
 		if issues_Query.Category_Id <= 0 && issues_Query.Page >= 1 && issues_Query.Page_Limit >= 1 { // Category Query가 없으면서, Page, Page_Limit Query가 있으면...
-			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from writedream.issues AS iss LEFT OUTER JOIN writedream.memos AS mms on iss.id = mms.issue_id GROUP BY iss.id limit %d, %d", (issues_Query.Page-1)*issues_Query.Page_Limit, issues_Query.Page_Limit)
+			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from  issues AS iss LEFT OUTER JOIN  memos AS mms on iss.id = mms.issue_id GROUP BY iss.id limit %d, %d", (issues_Query.Page-1)*issues_Query.Page_Limit, issues_Query.Page_Limit)
 			// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
 			// Limit을 사용하여 페이징 처리를 해줄건데, (Page -1) * Page_limit, Page_limit * Page
 			rows, err := db.Database.Query(sql)
@@ -106,7 +106,7 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 			}
 
 			// 몇 개의 Issue가 있는지 체크
-			sql = fmt.Sprintf("SELECT count(iss.id) AS issue_count from writedream.issues AS iss")
+			sql = fmt.Sprintf("SELECT count(iss.id) AS issue_count from  issues AS iss")
 			var issue_count int
 			err = db.Database.QueryRow(sql).Scan(&issue_count)
 
@@ -125,7 +125,7 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 
 			return issues, issue_count, nil
 		} else if issues_Query.Category_Id <= 0 && issues_Query.Page <= 0 && issues_Query.Page_Limit <= 0 { // Catgory Query가 없으면서, Page, Page_Limit Query가 없으면...
-			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from writedream.issues AS iss LEFT OUTER JOIN writedream.memos AS mms on iss.id = mms.issue_id GROUP BY iss.id")
+			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from  issues AS iss LEFT OUTER JOIN  memos AS mms on iss.id = mms.issue_id GROUP BY iss.id")
 			// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
 			rows, err := db.Database.Query(sql)
 			defer rows.Close()
@@ -152,7 +152,7 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 
 func CreateIssue(issues_category dto.CreateIssueCategoryDTO, issue dto.CreateIssueDTO) (int64, error) {
 	// Title과 Content를 Insert 해줌
-	create_issue, err := db.Database.Exec("INSERT INTO writedream.issues (title, content) VALUES (?, ?)", issue.Title, issue.Content)
+	create_issue, err := db.Database.Exec("INSERT INTO  issues (title, content) VALUES (?, ?)", issue.Title, issue.Content)
 
 	if err != nil {
 		return 0, err
@@ -166,7 +166,7 @@ func CreateIssue(issues_category dto.CreateIssueCategoryDTO, issue dto.CreateIss
 		return 0, err
 	}
 
-	_, err = db.Database.Exec("INSERT INTO writedream.issue_category (issue_id, category_id) VALUES (?, ?)", created_issue_id, issues_category.Category_Id)
+	_, err = db.Database.Exec("INSERT INTO  issue_category (issue_id, category_id) VALUES (?, ?)", created_issue_id, issues_category.Category_Id)
 
 	if err != nil {
 		return 0, err
@@ -179,21 +179,21 @@ func FindIssueById(id int) (models.IssueFindModel, error) {
 	var issue models.IssueFindModel
 
 	// issue 테이블에서 id로 특정 행을 찾고 만약에 행이 존재하면 그 행의 값을 Scan하여 특정 값을 가져옴
-	err := db.Database.QueryRow("SELECT * FROM writedream.issues WHERE id = ?", id).Scan(&issue.Id, &issue.Title, &issue.Content, &issue.ViewCount, &issue.Created_At, &issue.Updated_At)
+	err := db.Database.QueryRow("SELECT * FROM  issues WHERE id = ?", id).Scan(&issue.Id, &issue.Title, &issue.Content, &issue.ViewCount, &issue.Created_At, &issue.Updated_At)
 
 	if err != nil {
 		return models.IssueFindModel{}, err
 	}
 
 	// 특정 issue를 검색할 때마다 issue의 view_count 열의 값을 1씩 올려줌
-	_, err = db.Database.Exec("UPDATE writedream.issues SET view_count = view_count + 1 WHERE id = ?", id)
+	_, err = db.Database.Exec("UPDATE  issues SET view_count = view_count + 1 WHERE id = ?", id)
 
 	if err != nil {
 		return models.IssueFindModel{}, err
 	}
 
 	// Memo 테이블에서 Issue의 id를 외래키로 저장하고 있는 행을 모두 가져옴
-	rows, err := db.Database.Query("SELECT * FROM writedream.memos WHERE issue_id = ?", id)
+	rows, err := db.Database.Query("SELECT * FROM  memos WHERE issue_id = ?", id)
 	defer rows.Close()
 
 	if err != nil {
@@ -221,7 +221,7 @@ func FindIssueById(id int) (models.IssueFindModel, error) {
 
 func UpdateIssue(id int, issue models.IssueModel) (int, error) {
 	// Update Query를 사용하여 Issue 테이블의 Id에 맞는 raw를 Update 해줌
-	_, err := db.Database.Exec("UPDATE writedream.issues SET title = ?, content = ? WHERE id = ?", issue.Title, issue.Content, id)
+	_, err := db.Database.Exec("UPDATE  issues SET title = ?, content = ? WHERE id = ?", issue.Title, issue.Content, id)
 
 	// 만약에 업데이트를 했는데 오류가 생겼다면 에러
 	if err != nil {
@@ -233,8 +233,8 @@ func UpdateIssue(id int, issue models.IssueModel) (int, error) {
 
 func DeleteIssue(id int) (int, error) {
 	// Delete Query를 사용하여 Issue 테이블에 Id에 맞는 raw을 삭제해줌
-	_, err := db.Database.Exec("DELETE FROM writedream.issues WHERE id = ?", id)
-	db.Database.Exec("DELETE FROM writedream.issue_category WHERE issue_id = ? or category_id = ?", id, id)
+	_, err := db.Database.Exec("DELETE FROM  issues WHERE id = ?", id)
+	db.Database.Exec("DELETE FROM  issue_category WHERE issue_id = ? or category_id = ?", id, id)
 
 	// Delete를 할 때 오류가 생겼다면...
 	if err != nil {

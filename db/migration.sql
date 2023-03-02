@@ -1,11 +1,11 @@
-Create Table: CREATE TABLE `categories` (
+CREATE TABLE `categories` (
   `id` int NOT NULL AUTO_INCREMENT,
   `title` varchar(30) NOT NULL,
   PRIMARY KEY (`id`),
   UNIQUE KEY `title_UNIQUE` (`title`)
 );
 
-Create Table: CREATE TABLE `issues` (
+CREATE TABLE `issues` (
   `id` int NOT NULL AUTO_INCREMENT,
   `title` varchar(50) NOT NULL,
   `content` varchar(255) NOT NULL,
@@ -15,7 +15,7 @@ Create Table: CREATE TABLE `issues` (
   PRIMARY KEY (`id`)
 );
 
-Create Table: CREATE TABLE `memos` (
+CREATE TABLE `memos` (
   `id` int NOT NULL AUTO_INCREMENT,
   `issue_id` int NOT NULL,
   `text` varchar(255) NOT NULL,
@@ -25,7 +25,7 @@ Create Table: CREATE TABLE `memos` (
   CONSTRAINT `memos_ibfk_1` FOREIGN KEY (`issue_id`) REFERENCES `issues` (`id`) ON DELETE CASCADE
 );
 
-Create Table: CREATE TABLE `issue_category` (
+CREATE TABLE `issue_category` (
   `issue_id` int NOT NULL,
   `category_id` int NOT NULL,
   PRIMARY KEY (`issue_id`,`category_id`),
