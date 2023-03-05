@@ -77,3 +77,8 @@
 ## Update 2023-02-19 03:31
 
 - Issue의 상세 페이지 (ReadIssue)에서 Memo도 페이징처리
+
+# 10.
+
+- Dockerfile, Docker-compose, DB-migration 파일 생성
+- DB 연결 코드 수정 ( Docker 전용 )

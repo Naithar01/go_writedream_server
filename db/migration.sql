@@ -34,3 +34,5 @@ CREATE TABLE `issue_category` (
   CONSTRAINT `iss_cate_ibfk_1` FOREIGN KEY (`issue_id`) REFERENCES `issues` (`id`) ON DELETE CASCADE,
   CONSTRAINT `iss_cate_ibfk_2` FOREIGN KEY (`category_id`) REFERENCES `categories` (`id`) ON DELETE CASCADE
 );
+
+INSERT INTO writedream.categories (`title`) VALUES ('Default');
