@@ -8,18 +8,23 @@ services:
       MYSQL_DATABASE: writedream
     volumes:
       - ./mysql/data:/var/lib/mysql
+      - ./db/:/docker-entrypoint-initdb.d/
     ports:
       - 3306:3306
+    restart: always
     command:
       - --character-set-server=utf8mb4
       - --collation-server=utf8mb4_unicode_ci
 
   app:
-    build: .
+    build: 
+      context: .
+      dockerfile: dockerfile
     ports:
       - 8080:8080
     depends_on:
       - db
+    restart: always
     environment:
       DB_HOST: db
       DB_PORT: 3306
