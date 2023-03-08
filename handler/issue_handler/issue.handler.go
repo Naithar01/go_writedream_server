@@ -16,7 +16,7 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 	// - 페이징 처리 Query가 없을 때
 	// - 페이징 처리 Query가 있을 때
 	if issues_Query.Category_Id >= 1 {
-		rows, err := db.Database.Query("SELECT issue_id FROM  issue_category WHERE category_id = ?", issues_Query.Category_Id)
+		rows, err := db.Database.Query("SELECT issue_id FROM issue_category WHERE category_id = ?", issues_Query.Category_Id)
 		defer rows.Close()
 
 		if err != nil {
@@ -38,7 +38,7 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 		issue_id_list = issue_id_list[:len(issue_id_list)-1]
 
 		if issues_Query.Category_Id >= 1 && issues_Query.Page <= 0 && issues_Query.Page_Limit <= 0 { // Category Query가 있으면서, Page, Page_Limit Query가 없으면...
-			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from  issues AS iss LEFT OUTER JOIN  memos AS mms on iss.id = mms.issue_id WHERE iss.id in (%s) GROUP BY iss.id", issue_id_list)
+			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from  issues AS iss LEFT OUTER JOIN  memos AS mms on iss.id = mms.issue_id WHERE iss.id in (%s) GROUP BY iss.id ORDER BY create_at DESC", issue_id_list)
 			// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
 			rows, err := db.Database.Query(sql)
 			defer rows.Close()
@@ -58,7 +58,7 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 
 			return issues, len(issues), nil
 		} else if issues_Query.Category_Id >= 1 && issues_Query.Page >= 1 && issues_Query.Page_Limit >= 1 { // Category Query가 있으면서, Page, Page_Limit Query가 둘 다 있으면...
-			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from  issues AS iss LEFT OUTER JOIN  memos AS mms on iss.id = mms.issue_id WHERE iss.id in (%s) GROUP BY iss.id limit %d, %d", issue_id_list, (issues_Query.Page-1)*issues_Query.Page_Limit, issues_Query.Page_Limit)
+			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from issues AS iss LEFT OUTER JOIN memos AS mms on iss.id = mms.issue_id WHERE iss.id in (%s) GROUP BY iss.id ORDER BY create_at DESC limit %d, %d", issue_id_list, (issues_Query.Page-1)*issues_Query.Page_Limit, issues_Query.Page_Limit)
 
 			// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
 			// Limit을 사용하여 페이징 처리를 해줄건데, (Page -1) * Page_limit, Page_limit * Page
@@ -95,7 +95,7 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 		// - 페이징 처리 Query가 없을 때
 		// - 페이징 처리 Query가 있을 때
 		if issues_Query.Category_Id <= 0 && issues_Query.Page >= 1 && issues_Query.Page_Limit >= 1 { // Category Query가 없으면서, Page, Page_Limit Query가 있으면...
-			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from  issues AS iss LEFT OUTER JOIN  memos AS mms on iss.id = mms.issue_id GROUP BY iss.id limit %d, %d", (issues_Query.Page-1)*issues_Query.Page_Limit, issues_Query.Page_Limit)
+			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from  issues AS iss LEFT OUTER JOIN  memos AS mms on iss.id = mms.issue_id GROUP BY iss.id ORDER BY create_at DESC limit %d, %d", (issues_Query.Page-1)*issues_Query.Page_Limit, issues_Query.Page_Limit)
 			// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
 			// Limit을 사용하여 페이징 처리를 해줄건데, (Page -1) * Page_limit, Page_limit * Page
 			rows, err := db.Database.Query(sql)
@@ -125,7 +125,7 @@ func GetAllIssueList(issues_Query dto.IssueListQuery) ([]models.IssueListModel, 
 
 			return issues, issue_count, nil
 		} else if issues_Query.Category_Id <= 0 && issues_Query.Page <= 0 && issues_Query.Page_Limit <= 0 { // Catgory Query가 없으면서, Page, Page_Limit Query가 없으면...
-			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from  issues AS iss LEFT OUTER JOIN  memos AS mms on iss.id = mms.issue_id GROUP BY iss.id")
+			sql := fmt.Sprintf("SELECT iss.id, iss.title, iss.content, iss.view_count, iss.create_at, iss.update_at, count(mms.id) AS memo_count from  issues AS iss LEFT OUTER JOIN  memos AS mms on iss.id = mms.issue_id GROUP BY iss.id ORDER BY create_at DESC")
 			// DB에서 SELECT 해온 모든 데이터들이 rows 변수에 담김
 			rows, err := db.Database.Query(sql)
 			defer rows.Close()

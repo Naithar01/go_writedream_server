@@ -6,6 +6,8 @@ GRANT ALL PRIVILEGES ON *.* TO 'root'@'localhost';
 
 FLUSH PRIVILEGES;
 
+CREATE DATABASE IF NOT EXISTS writedream;
+
 USE writedream;
 
 CREATE TABLE `categories` (
