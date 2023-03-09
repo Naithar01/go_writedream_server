@@ -3,7 +3,6 @@ package router
 import (
 	"github.com/Naithar01/go_write_dream/controllers"
 	"github.com/Naithar01/go_write_dream/middleware"
-	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 )
 
@@ -15,7 +14,6 @@ var (
 
 func InitRouter() *gin.Engine {
 	app := gin.Default()
-	app.Use(cors.Default())
 
 	api := app.Group("/api")
 	api.Use(middleware.SetHader)
