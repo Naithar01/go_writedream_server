@@ -14,9 +14,8 @@ var (
 
 func InitRouter() *gin.Engine {
 	app := gin.Default()
-
+	app.Use(middleware.CORSMiddleware())
 	api := app.Group("/api")
-	api.Use(middleware.SetHader)
 	{
 		categories := api.Group("/categories")
 		{

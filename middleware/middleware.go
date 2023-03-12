@@ -4,11 +4,18 @@ import (
 	"github.com/gin-gonic/gin"
 )
 
-func SetHader(c *gin.Context) {
-	c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, Origin")
-	c.Header("Access-Control-Allow-Credentials", "true")
-	c.Header("Access-Control-Allow-Origin", "*")
-	c.Header("Access-Control-Allow-Methods", "GET, DELETE, POST, PATCH, PUT, OPTIONS")
+func CORSMiddleware() gin.HandlerFunc {
+	return func(c *gin.Context) {
+		c.Header("Access-Control-Allow-Headers", "Content-Type, Authorization, Origin")
+		c.Header("Access-Control-Allow-Credentials", "true")
+		c.Header("Access-Control-Allow-Origin", "http://localhost:3000, http://ec2-3-39-230-239.ap-northeast-2.compute.amazonaws.com:8080")
+		c.Header("Access-Control-Allow-Methods", "GET, DELETE, POST, PATCH, PUT")
 
-	c.Next()
+		if c.Request.Method == "OPTIONS" {
+			c.AbortWithStatus(204)
+			return
+		}
+
+		c.Next()
+	}
 }
